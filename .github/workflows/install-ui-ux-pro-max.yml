@@ -1,9 +1,9 @@
 name: Install UI UX Pro Max Full
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/install-ui-ux-pro-max-full
+      - main
     paths:
       - .github/workflows/install-ui-ux-pro-max.yml
 
