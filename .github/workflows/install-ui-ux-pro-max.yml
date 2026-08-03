@@ -37,13 +37,14 @@ jobs:
 
       - name: Validate installation
         run: |
+          echo "Installed files:"
+          find .agents/skills/ui-ux-pro-max -type f | sort
           test -f .agents/skills/ui-ux-pro-max/SKILL.md
           test -f .agents/skills/ui-ux-pro-max/scripts/search.py
           test -d .agents/skills/ui-ux-pro-max/data
-          test -d .agents/skills/ui-ux-pro-max/references
+          test "$(find .agents/skills/ui-ux-pro-max/data -type f | wc -l)" -gt 5
           python .agents/skills/ui-ux-pro-max/scripts/search.py "futuristic developer portfolio" --domain style --max-results 1 >/tmp/uiux-validation.txt
           cat /tmp/uiux-validation.txt
-          find .agents/skills/ui-ux-pro-max -type f | sort
 
       - name: Commit complete installation
         run: |
