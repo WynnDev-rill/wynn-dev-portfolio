@@ -3,7 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { FlowlyPreview } from "../components/FlowlyPreview";
 import { Footer } from "../components/Footer";
 import { ArrowIcon, ExternalIcon, GithubIcon } from "../components/Icons";
-import { projectBySlug, projects } from "../data/projects";
+import { experienceProjects } from "../data/experience";
+import { projectBySlug } from "../data/projects";
 import { NotFoundPage } from "./NotFoundPage";
 
 export function ProjectDetailPage() {
@@ -12,14 +13,18 @@ export function ProjectDetailPage() {
 
   useEffect(() => {
     if (!project) return;
+    document.documentElement.dataset.palette = "light";
     document.title = `${project.name} — Wynn Dev`;
-    return () => { document.title = "Wynn Dev — Independent App Developer"; };
+    return () => {
+      document.title = "Wynn Dev — Independent App Developer";
+      delete document.documentElement.dataset.palette;
+    };
   }, [project]);
 
   if (!project) return <NotFoundPage />;
 
-  const projectIndex = projects.findIndex((item) => item.slug === project.slug);
-  const nextProject = projects[(projectIndex + 1) % projects.length] ?? projects[0];
+  const projectIndex = experienceProjects.findIndex((item) => item.slug === project.slug);
+  const nextProject = experienceProjects[(projectIndex + 1) % experienceProjects.length] ?? experienceProjects[0];
 
   return (
     <>

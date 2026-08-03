@@ -1,12 +1,14 @@
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
-import type { Project } from "../types";
+import { experienceProjects, type ExperienceProject } from "../data/experience";
 
 const CircularEngineCanvas = lazy(() => import("./CircularEngineCanvas"));
+const SYSTEM_STEPS = ["CAPTURE", "PROCESS", "SCHEDULE", "REVIEW", "ANALYZE", "RETAIN"] as const;
 
 interface CircularEngineProps {
-  project: Project;
+  project: ExperienceProject;
   activeIndex: number;
   forceLite: boolean;
+  onSelectProject: (index: number) => void;
 }
 
 interface BoundaryProps {
@@ -26,7 +28,7 @@ class EngineBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   componentDidCatch(_error: Error, _info: ErrorInfo) {
-    // The CSS engine remains fully usable when WebGL cannot initialize.
+    // A real image fallback keeps the composition usable when WebGL is unavailable.
   }
 
   render() {
@@ -43,43 +45,64 @@ function detectReducedExperience() {
   return { reducedMotion, weakDevice: lowMemory || fewCores || saveData };
 }
 
-function StaticEngine({ project }: { project: Project }) {
+function detectWebGL() {
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
+function StaticEngine({ project }: { project: ExperienceProject }) {
+  const source = project.slug === "memocard" ? "/images/engine/memocard-blueprint.webp" : project.icon;
   return (
-    <div className="static-engine" style={{ "--project-accent": project.accent, "--project-accent-secondary": project.accentSecondary } as React.CSSProperties}>
-      <div className="static-grid" />
-      <div className="static-ring ring-one" />
-      <div className="static-ring ring-two" />
-      <div className="static-ring ring-three" />
-      <div className="static-particles" aria-hidden="true">
-        {Array.from({ length: 18 }, (_, index) => <i key={index} style={{ "--particle": index } as React.CSSProperties} />)}
-      </div>
-      <div className="static-core">
-        <img src={project.icon} alt="" width="116" height="116" />
-      </div>
+    <div className={"engine-fallback " + (project.slug === "memocard" ? "is-blueprint" : "is-icon")}>
+      <img src={source} alt="" width={project.slug === "memocard" ? 1254 : 256} height={project.slug === "memocard" ? 1254 : 256} />
     </div>
   );
 }
 
-export function CircularEngine({ project, activeIndex, forceLite }: CircularEngineProps) {
-  const [experience, setExperience] = useState({ reducedMotion: false, weakDevice: false });
+export function CircularEngine({ project, activeIndex, forceLite, onSelectProject }: CircularEngineProps) {
+  const [experience, setExperience] = useState({ reducedMotion: false, weakDevice: false, webglAvailable: false });
 
   useEffect(() => {
-    setExperience(detectReducedExperience());
+    setExperience({ ...detectReducedExperience(), webglAvailable: detectWebGL() });
   }, []);
 
   const staticFallback = <StaticEngine project={project} />;
-  const useStatic = forceLite || experience.reducedMotion;
+  const useStatic = forceLite || experience.reducedMotion || !experience.webglAvailable;
   const quality = experience.weakDevice ? "low" : "high";
+  const isMemoCard = project.slug === "memocard";
 
   return (
     <div
-      className="engine-panel"
-      style={{ "--project-accent": project.accent, "--project-accent-secondary": project.accentSecondary } as React.CSSProperties}
+      className={"orbital-engine surface-" + project.surface}
+      style={{
+        "--project-accent": project.accent,
+        "--project-accent-secondary": project.accentSecondary,
+      } as React.CSSProperties}
     >
-      <div className="engine-meta top-meta">
-        <span>ORBITAL ENGINE</span>
-        <span>0{activeIndex + 1} / 06</span>
-      </div>
+      <nav className="engine-project-rail" aria-label="Pilih proyek aktif">
+        {experienceProjects.map((item, index) => (
+          <button
+            type="button"
+            className={activeIndex === index ? "is-active" : ""}
+            aria-current={activeIndex === index ? "true" : undefined}
+            aria-label={"Tampilkan " + item.name}
+            onClick={() => onSelectProject(index)}
+            key={item.slug}
+          >
+            <span>{String(index + 1).padStart(2, "0")}</span><i />
+          </button>
+        ))}
+      </nav>
+
+      <div className="engine-angle engine-angle-top" aria-hidden="true">22.5°</div>
+      <div className="engine-angle engine-angle-bottom" aria-hidden="true">22.5°</div>
+      <div className="engine-angle engine-angle-left" aria-hidden="true">45°</div>
+      <div className="engine-angle engine-angle-right" aria-hidden="true">45°</div>
+
       <div className="engine-viewport" aria-hidden="true">
         {useStatic ? staticFallback : (
           <EngineBoundary fallback={staticFallback}>
@@ -90,21 +113,44 @@ export function CircularEngine({ project, activeIndex, forceLite }: CircularEngi
                 accentSecondary={project.accentSecondary}
                 activeIndex={activeIndex}
                 quality={quality}
+                surface={project.surface}
               />
             </Suspense>
           </EngineBoundary>
         )}
       </div>
-      <div className="engine-readout">
-        <div>
-          <span>ACTIVE SYSTEM</span>
-          <strong>{project.name}</strong>
-        </div>
-        <div className="engine-signal" aria-hidden="true"><i /><i /><i /><i /></div>
+
+      <div className="engine-system-readout">
+        <strong>{project.systemLabel}</strong>
+        {SYSTEM_STEPS.map((step, index) => (
+          <span key={step}>{String(index + 1).padStart(2, "0")}&nbsp;&nbsp; {step}</span>
+        ))}
       </div>
-      <div className="engine-meta bottom-meta">
-        <span>{useStatic ? "STATIC FALLBACK" : quality === "low" ? "ADAPTIVE / LOW" : "WEBGL / ACTIVE"}</span>
-        <span>SCROLL + POINTER</span>
+
+      <div className="engine-field-readout">
+        <strong>{project.fieldLabel}</strong>
+        {isMemoCard ? (
+          <><span>ALGORITMA ADAPTIF</span><span>PERSONALIZED INTERVALS</span><span>RETENSI OPTIMAL</span></>
+        ) : (
+          <><span>{project.technologies[0]}</span><span>{project.technologies[1]}</span><span>ADAPTIVE OUTPUT</span></>
+        )}
+      </div>
+
+      <div className="engine-signal-readout">
+        <strong>{project.signalLabel}</strong>
+        {isMemoCard ? (
+          <><span>EASE FACTOR</span><span>STABILITY</span><span>RETRIEVAL RATE</span></>
+        ) : (
+          <><span>{project.status}</span><span>{quality === "low" ? "ADAPTIVE QUALITY" : "REALTIME RENDER"}</span></>
+        )}
+      </div>
+
+      <div className="engine-active-index" aria-hidden="true">
+        <strong>{String(activeIndex + 1).padStart(2, "0")}</strong><span>/ 06</span>
+      </div>
+
+      <div className="engine-scroll-label" aria-hidden="true">
+        <span>{useStatic ? "STATIC FALLBACK" : "SCROLL + POINTER"}</span><i />
       </div>
     </div>
   );
