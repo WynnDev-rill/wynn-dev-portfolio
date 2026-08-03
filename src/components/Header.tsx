@@ -9,9 +9,16 @@ interface HeaderProps {
 export function Header({ liteMode, onToggleLite }: HeaderProps) {
   const { pathname } = useLocation();
   const homePrefix = pathname === "/" ? "" : "/";
+  const projectSlug = pathname.startsWith("/projects/") ? pathname.split("/").filter(Boolean).at(-1) : undefined;
+  const mainTarget = pathname === "/"
+    ? "main-content-home"
+    : projectSlug
+      ? `main-content-project-${projectSlug}`
+      : "main-content-not-found";
 
   return (
     <header className="site-header">
+      <a className="skip-link" href={`#${mainTarget}`}>Lewati navigasi</a>
       <Link to="/" className="wordmark" aria-label="Wynn Dev — beranda">
         <span className="wordmark-mark">W</span>
         <span>WYNN / DEV</span>

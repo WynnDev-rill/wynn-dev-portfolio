@@ -24,31 +24,69 @@ export function HomePage({ liteMode }: HomePageProps) {
   }, [activeProject]);
 
   useEffect(() => {
-    const sections = experienceRef.current?.querySelectorAll<HTMLElement>("[data-engine-index]");
-    if (!sections?.length) return;
+    const experience = experienceRef.current;
+    const sections = experience?.querySelectorAll<HTMLElement>("[data-engine-index]");
+    if (!experience || !sections?.length) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const focused = entries.find((entry) => entry.isIntersecting);
-        if (!focused) return;
-        const nextIndex = Number((focused.target as HTMLElement).dataset.engineIndex);
-        if (Number.isInteger(nextIndex)) setActiveIndex(nextIndex);
-      },
-      { rootMargin: "-46% 0px -46%", threshold: 0 },
-    );
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let frame = 0;
+    const updateExperience = () => {
+      frame = 0;
+      const viewportHeight = window.innerHeight;
+      const focusLine = viewportHeight * 0.52;
+      const experienceRect = experience.getBoundingClientRect();
+      const scrollableDistance = Math.max(experienceRect.height - viewportHeight, 1);
+      const progress = Math.min(1, Math.max(0, -experienceRect.top / scrollableDistance));
 
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
+      let closestDistance = Number.POSITIVE_INFINITY;
+      let closestIndex = 1;
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        const distance = Math.abs(rect.top + rect.height * 0.5 - focusLine);
+        if (distance < closestDistance) {
+          const candidate = Number(section.dataset.engineIndex);
+          if (Number.isInteger(candidate)) {
+            closestDistance = distance;
+            closestIndex = candidate;
+          }
+        }
+      });
+
+      setActiveIndex((current) => current === closestIndex ? current : closestIndex);
+      experience.style.setProperty("--experience-progress", String(progress));
+      const drift = reducedMotionQuery.matches || liteMode ? 0 : Math.sin(progress * Math.PI * 2) * 10;
+      experience.style.setProperty("--engine-drift-y", `${drift}px`);
+    };
+
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateExperience);
+    };
+
+    updateExperience();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    reducedMotionQuery.addEventListener("change", scheduleUpdate);
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      reducedMotionQuery.removeEventListener("change", scheduleUpdate);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [liteMode]);
 
   const selectProject = (index: number) => {
     const project = experienceProjects[index];
     if (!project) return;
-    document.getElementById("chapter-" + project.slug)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("chapter-" + project.slug)?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
   };
 
   return (
     <main
+      id="main-content-home"
+      tabIndex={-1}
       className={"portfolio-home surface-" + activeProject.surface}
       style={{
         "--project-accent": activeProject.accent,
@@ -65,7 +103,7 @@ export function HomePage({ liteMode }: HomePageProps) {
           />
         </aside>
         <div className="experience-copy-layer">
-          <BlueprintHero project={featuredProject} index={1} />
+          <BlueprintHero project={featuredProject} index={1} liteMode={liteMode} />
           <ProjectJourney projects={experienceProjects} activeIndex={activeIndex} />
         </div>
       </section>

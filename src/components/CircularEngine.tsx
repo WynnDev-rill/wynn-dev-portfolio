@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import { experienceProjects, type ExperienceProject } from "../data/experience";
 
@@ -39,10 +40,13 @@ class EngineBoundary extends Component<BoundaryProps, BoundaryState> {
 function detectReducedExperience() {
   const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const touchPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get("touch-preview") === "1";
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches || touchPreview;
+  const compactViewport = window.matchMedia("(max-width: 1200px)").matches;
   const lowMemory = typeof navigatorWithMemory.deviceMemory === "number" && navigatorWithMemory.deviceMemory <= 4;
   const fewCores = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
   const saveData = navigatorWithMemory.connection?.saveData === true;
-  return { reducedMotion, weakDevice: lowMemory || fewCores || saveData };
+  return { reducedMotion, coarsePointer, compactViewport, weakDevice: lowMemory || fewCores || saveData };
 }
 
 function detectWebGL() {
@@ -64,20 +68,71 @@ function StaticEngine({ project }: { project: ExperienceProject }) {
 }
 
 export function CircularEngine({ project, activeIndex, forceLite, onSelectProject }: CircularEngineProps) {
-  const [experience, setExperience] = useState({ reducedMotion: false, weakDevice: false, webglAvailable: false });
+  const engineControls = useAnimationControls();
+  const [experience, setExperience] = useState({
+    reducedMotion: false,
+    coarsePointer: false,
+    compactViewport: false,
+    weakDevice: false,
+    webglAvailable: false,
+  });
 
   useEffect(() => {
-    setExperience({ ...detectReducedExperience(), webglAvailable: detectWebGL() });
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const compactViewportQuery = window.matchMedia("(max-width: 1200px)");
+    const webglAvailable = detectWebGL();
+    const updateExperience = () => {
+      const nextExperience = detectReducedExperience();
+      setExperience({ ...nextExperience, webglAvailable });
+      document.documentElement.dataset.input = nextExperience.coarsePointer ? "coarse" : "fine";
+    };
+
+    updateExperience();
+    reducedMotionQuery.addEventListener("change", updateExperience);
+    coarsePointerQuery.addEventListener("change", updateExperience);
+    compactViewportQuery.addEventListener("change", updateExperience);
+
+    return () => {
+      reducedMotionQuery.removeEventListener("change", updateExperience);
+      coarsePointerQuery.removeEventListener("change", updateExperience);
+      compactViewportQuery.removeEventListener("change", updateExperience);
+    };
   }, []);
 
   const staticFallback = <StaticEngine project={project} />;
-  const useStatic = forceLite || experience.reducedMotion || !experience.webglAvailable;
+  const touchOptimized = experience.coarsePointer && experience.compactViewport;
+  const useStatic = forceLite || experience.reducedMotion || touchOptimized || !experience.webglAvailable;
   const quality = experience.weakDevice ? "low" : "high";
   const isMemoCard = project.slug === "memocard";
+  const staticTransition = {
+    duration: experience.reducedMotion ? 0 : forceLite ? 0.22 : 0.36,
+    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+  };
+
+  useEffect(() => {
+    if (experience.reducedMotion || useStatic) {
+      engineControls.set({ opacity: 1, scale: 1, y: 0 });
+      return;
+    }
+
+    engineControls.stop();
+    engineControls.set({ opacity: 0.42, scale: 0.972, y: 12 });
+    void engineControls.start({
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
+    });
+  }, [activeIndex, engineControls, experience.reducedMotion, useStatic]);
 
   return (
     <div
-      className={"orbital-engine surface-" + project.surface}
+      className={
+        "orbital-engine surface-" + project.surface +
+        (touchOptimized ? " is-touch-optimized" : "") +
+        (useStatic ? " is-static-render" : "")
+      }
       style={{
         "--project-accent": project.accent,
         "--project-accent-secondary": project.accentSecondary,
@@ -104,19 +159,34 @@ export function CircularEngine({ project, activeIndex, forceLite, onSelectProjec
       <div className="engine-angle engine-angle-right" aria-hidden="true">45°</div>
 
       <div className="engine-viewport" aria-hidden="true">
-        {useStatic ? staticFallback : (
-          <EngineBoundary fallback={staticFallback}>
-            <Suspense fallback={staticFallback}>
-              <CircularEngineCanvas
-                visual={project.visual}
-                accent={project.accent}
-                accentSecondary={project.accentSecondary}
-                activeIndex={activeIndex}
-                quality={quality}
-                surface={project.surface}
-              />
-            </Suspense>
-          </EngineBoundary>
+        {useStatic ? (
+          <AnimatePresence initial={false} mode="sync">
+            <motion.div
+              className="engine-visual-state"
+              key={project.slug}
+              initial={experience.reducedMotion ? false : { opacity: 0, scale: 0.985, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={experience.reducedMotion ? undefined : { opacity: 0, scale: 1.008, y: -4 }}
+              transition={staticTransition}
+            >
+              {staticFallback}
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <motion.div className="engine-visual-state" animate={engineControls} initial={{ opacity: 1, scale: 1, y: 0 }}>
+            <EngineBoundary fallback={staticFallback}>
+              <Suspense fallback={staticFallback}>
+                <CircularEngineCanvas
+                  visual={project.visual}
+                  accent={project.accent}
+                  accentSecondary={project.accentSecondary}
+                  activeIndex={activeIndex}
+                  quality={quality}
+                  surface={project.surface}
+                />
+              </Suspense>
+            </EngineBoundary>
+          </motion.div>
         )}
       </div>
 
@@ -150,7 +220,7 @@ export function CircularEngine({ project, activeIndex, forceLite, onSelectProjec
       </div>
 
       <div className="engine-scroll-label" aria-hidden="true">
-        <span>{useStatic ? "STATIC FALLBACK" : "SCROLL + POINTER"}</span><i />
+        <span>{touchOptimized ? "TOUCH MOTION" : useStatic ? "STATIC FALLBACK" : "SCROLL + POINTER"}</span><i />
       </div>
     </div>
   );

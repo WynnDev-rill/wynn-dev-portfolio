@@ -1,14 +1,17 @@
 import { ArrowDown, ArrowRight } from "@phosphor-icons/react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import type { ExperienceProject } from "../data/experience";
 
 interface BlueprintHeroProps {
   project: ExperienceProject;
   index: number;
+  liteMode: boolean;
 }
 
-export function BlueprintHero({ project, index }: BlueprintHeroProps) {
+export function BlueprintHero({ project, index, liteMode }: BlueprintHeroProps) {
+  const reducedMotion = useReducedMotion();
+  const reduceEffects = reducedMotion || liteMode;
   const lead = project.slug === "memocard"
     ? "MemoCard adalah sistem belajar adaptif berbasis spaced repetition dan metrik retensi. Dibangun untuk membantu siapa pun memahami, mengingat, dan berkembang setiap hari."
     : project.description;
@@ -22,9 +25,9 @@ export function BlueprintHero({ project, index }: BlueprintHeroProps) {
     >
       <motion.div
         className="blueprint-copy"
-        initial={{ opacity: 0, y: 28 }}
+        initial={reduceEffects ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reduceEffects ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <p className="blueprint-eyebrow"><i /> {project.category.replace(" & ", " / ")}</p>
         <h1 id="blueprint-title">

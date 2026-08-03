@@ -3,7 +3,7 @@ import { ArrowIcon } from "../components/Icons";
 
 export function NotFoundPage() {
   return (
-    <main className="not-found-page">
+    <main id="main-content-not-found" className="not-found-page" tabIndex={-1}>
       <p className="eyebrow">404 / LOST ORBIT</p>
       <h1>Halaman ini keluar dari lintasan.</h1>
       <p>Alamat yang kamu buka tidak ada, tetapi keenam proyek utama masih aman di pusat semesta.</p>

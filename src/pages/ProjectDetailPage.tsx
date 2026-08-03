@@ -29,6 +29,8 @@ export function ProjectDetailPage() {
   return (
     <>
       <main
+        id={`main-content-project-${project.slug}`}
+        tabIndex={-1}
         className="detail-page"
         style={{
           "--project-accent": project.accent,
