@@ -1,0 +1,55 @@
+name: Install UI UX Pro Max Full
+
+on:
+  push:
+    branches:
+      - agent/install-ui-ux-pro-max-full
+    paths:
+      - .github/workflows/install-ui-ux-pro-max.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/install-ui-ux-pro-max-full
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install complete Codex skill
+        run: |
+          rm -rf .agents/skills/ui-ux-pro-max
+          npx --yes ui-ux-pro-max-cli init --ai codex --force
+
+      - name: Validate installation
+        run: |
+          test -f .agents/skills/ui-ux-pro-max/SKILL.md
+          test -f .agents/skills/ui-ux-pro-max/scripts/search.py
+          test -d .agents/skills/ui-ux-pro-max/data
+          test -d .agents/skills/ui-ux-pro-max/references
+          python .agents/skills/ui-ux-pro-max/scripts/search.py "futuristic developer portfolio" --domain style --max-results 1 >/tmp/uiux-validation.txt
+          cat /tmp/uiux-validation.txt
+          find .agents/skills/ui-ux-pro-max -type f | sort
+
+      - name: Commit complete installation
+        run: |
+          rm -f .github/workflows/install-ui-ux-pro-max.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .agents/skills/ui-ux-pro-max .github/workflows/install-ui-ux-pro-max.yml
+          git commit -m "Install complete UI UX Pro Max skill"
+          git push origin HEAD:agent/install-ui-ux-pro-max-full
