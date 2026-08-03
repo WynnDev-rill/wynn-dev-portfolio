@@ -6,6 +6,7 @@ import "@fontsource-variable/manrope";
 import "@fontsource/ibm-plex-mono/400.css";
 import "./styles.css";
 import "./blueprint.css";
+import "./immersive.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

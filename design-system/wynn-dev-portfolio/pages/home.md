@@ -1,52 +1,50 @@
 # Home Page Overrides
 
 > **PROJECT:** Wynn Dev Portfolio
-> **Generated:** 2026-08-03 13:40:39
-> **Page Type:** Landing / Marketing
+>
+> **PAGE:** Immersive project journey
+> **SOURCE OF TRUTH:** `/workspace/scratch/4d649bcbfa94/upload/1000080034.mp4`
 
-> ⚠️ **IMPORTANT:** Rules in this file **override** the Master file (`design-system/MASTER.md`).
-> Only deviations from the Master are documented here. For all other rules, refer to the Master.
+These rules override the generic portfolio pattern in `../MASTER.md` whenever the homepage is implemented or reviewed.
 
----
+## Composition
 
-## Page-Specific Rules
+- One persistent, full-viewport stage pinned by native sticky positioning.
+- Six equal vertical scroll chapters drive one circular generative engine; no horizontal gesture is required.
+- The engine owns roughly 55–65% of the desktop frame and 45–55% of the mobile frame.
+- Project copy remains on the left of the engine on desktop. On mobile it overlays the lower edge of the engine with a dedicated readability zone.
+- Navigation, project rail, active chapter count, and scroll cue remain visible throughout the journey.
+- After the motion sequence, projects resolve into a flat system index—never a screenshot grid.
 
-### Layout Overrides
+## Visual Language
 
-- **Max Width:** 1200px (standard)
-- **Layout:** Full-width sections, centered content
-- **Sections:** 1. Hero (Name/Role), 2. Project Grid (Masonry), 3. About/Philosophy, 4. Contact
+- Scientific instrument / kinetic technical blueprint, alternating graphite-black and warm paper surfaces.
+- Persistent cyan, green, yellow, and red perimeter signals; each project accent controls the morphing core.
+- Zero-radius technical labels and flat divider structures. Avoid generic rounded cards, blobs, purple gradients, and glass panels.
+- Manrope Variable remains the display/body family to preserve the existing bundled font and the reference’s neutral grotesk character. IBM Plex Mono is used only for measurements, labels, and readouts.
+- Real application icons are the only raster project assets in the motion presentation.
 
-### Spacing Overrides
+## Motion System
 
-- No overrides — use Master spacing
+- GSAP ScrollTrigger reads normalized scroll progress; CSS sticky provides the pin without scroll-jacking.
+- One React Three Fiber canvas stays mounted and morphs a shared vertex field between six procedural shapes.
+- Framer Motion handles copy, icon, and UI state transitions only; each UI transition is 280–360ms and interruptible.
+- Coarse pointer / Android receives the live engine at reduced DPR and vertex count. It is not forced into a static fallback.
+- Static identity fallback is reserved for reduced-motion, Lite mode, or unavailable WebGL.
 
-### Typography Overrides
+## Responsive And Accessibility
 
-- No overrides — use Master typography
+- Validate at 375×812, 412×915, 768×1024, 1024×768, and 1440×900.
+- No horizontal overflow; vertical browser chrome changes are handled with `dvh`.
+- Interactive targets are at least 44×44px and have keyboard focus states.
+- The canvas has a descriptive accessible label, while all six projects remain available as semantic text.
+- Body copy is at least 16px on mobile. Technical readouts may be smaller because they are supplementary, not the only explanation.
+- `prefers-reduced-motion` and the explicit Motion/Lite toggle must preserve navigation and content.
 
-### Color Overrides
+## Forbidden Homepage Patterns
 
-- **Strategy:** Neutral background (let work shine). Text: Black/White. Accent: Minimal.
-
-### Component Overrides
-
-- Avoid: No hover feedback on clickable elements
-- Avoid: Content wider than viewport
-- Avoid: Missing or incorrect viewport
-
----
-
-## Page-Specific Components
-
-- No unique components for this page
-
----
-
-## Recommendations
-
-- Effects: Small hover (50-100ms), loading spinners, success/error state anim, gesture-triggered (swipe/pinch), haptic
-- Interaction: Change cursor and add subtle visual change
-- Responsive: Ensure content fits viewport width
-- Responsive: Use width=device-width initial-scale=1
-- CTA Placement: Project Card Hover + Footer Contact
+- APK or product screenshots.
+- Per-project canvas remounts that cause popping instead of morphing.
+- Disabling WebGL solely because the pointer is coarse or the viewport is narrow.
+- Long conventional card stacks before the core motion experience.
+- Decorative motion that is unrelated to the active project or scroll state.

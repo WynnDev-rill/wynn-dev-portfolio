@@ -1,13 +1,24 @@
-import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
-import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  type ErrorInfo,
+  type MutableRefObject,
+  type ReactNode,
+} from "react";
 import { experienceProjects, type ExperienceProject } from "../data/experience";
+import { canUseWebGL, ProceduralEngineFallback } from "./ProceduralEngineFallback";
 
 const CircularEngineCanvas = lazy(() => import("./CircularEngineCanvas"));
-const SYSTEM_STEPS = ["CAPTURE", "PROCESS", "SCHEDULE", "REVIEW", "ANALYZE", "RETAIN"] as const;
+const SYSTEM_STEPS = ["CAPTURE", "CONNECT", "PROCESS", "ADAPT", "MEASURE", "EVOLVE"] as const;
 
 interface CircularEngineProps {
   project: ExperienceProject;
   activeIndex: number;
+  progressRef: MutableRefObject<number>;
   forceLite: boolean;
   onSelectProject: (index: number) => void;
 }
@@ -29,7 +40,7 @@ class EngineBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   componentDidCatch(_error: Error, _info: ErrorInfo) {
-    // A real image fallback keeps the composition usable when WebGL is unavailable.
+    // The semantic app identity remains available if WebGL fails at runtime.
   }
 
   render() {
@@ -37,114 +48,94 @@ class EngineBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 }
 
-function detectReducedExperience() {
-  const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+function getExperienceProfile() {
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+  const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const touchPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get("touch-preview") === "1";
-  const coarsePointer = window.matchMedia("(pointer: coarse)").matches || touchPreview;
-  const compactViewport = window.matchMedia("(max-width: 1200px)").matches;
-  const lowMemory = typeof navigatorWithMemory.deviceMemory === "number" && navigatorWithMemory.deviceMemory <= 4;
-  const fewCores = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
-  const saveData = navigatorWithMemory.connection?.saveData === true;
-  return { reducedMotion, coarsePointer, compactViewport, weakDevice: lowMemory || fewCores || saveData };
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const compactViewport = window.matchMedia("(max-width: 720px)").matches;
+  const weakDevice = connection?.saveData === true
+    || (typeof deviceMemory === "number" && deviceMemory <= 2)
+    || (typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4);
+
+  return { reducedMotion, coarsePointer, compactViewport, weakDevice };
 }
 
-function detectWebGL() {
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
-
-function StaticEngine({ project }: { project: ExperienceProject }) {
-  const source = project.slug === "memocard" ? "/images/engine/memocard-blueprint.webp" : project.icon;
-  return (
-    <div className={"engine-fallback " + (project.slug === "memocard" ? "is-blueprint" : "is-icon")}>
-      <img src={source} alt="" width={project.slug === "memocard" ? 1254 : 256} height={project.slug === "memocard" ? 1254 : 256} />
-    </div>
-  );
-}
-
-export function CircularEngine({ project, activeIndex, forceLite, onSelectProject }: CircularEngineProps) {
-  const engineControls = useAnimationControls();
-  const [experience, setExperience] = useState({
+export function CircularEngine({
+  project,
+  activeIndex,
+  progressRef,
+  forceLite,
+  onSelectProject,
+}: CircularEngineProps) {
+  const [profile, setProfile] = useState({
     reducedMotion: false,
     coarsePointer: false,
     compactViewport: false,
     weakDevice: false,
-    webglAvailable: false,
+    webglAvailable: true,
   });
 
   useEffect(() => {
-    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
-    const compactViewportQuery = window.matchMedia("(max-width: 1200px)");
-    const webglAvailable = detectWebGL();
-    const updateExperience = () => {
-      const nextExperience = detectReducedExperience();
-      setExperience({ ...nextExperience, webglAvailable });
-      document.documentElement.dataset.input = nextExperience.coarsePointer ? "coarse" : "fine";
+    const mediaQueries = [
+      window.matchMedia("(prefers-reduced-motion: reduce)"),
+      window.matchMedia("(pointer: coarse)"),
+      window.matchMedia("(max-width: 720px)"),
+    ];
+    const webglAvailable = canUseWebGL();
+    const update = () => {
+      const next = getExperienceProfile();
+      setProfile({ ...next, webglAvailable });
+      document.documentElement.dataset.input = next.coarsePointer ? "coarse" : "fine";
     };
 
-    updateExperience();
-    reducedMotionQuery.addEventListener("change", updateExperience);
-    coarsePointerQuery.addEventListener("change", updateExperience);
-    compactViewportQuery.addEventListener("change", updateExperience);
-
-    return () => {
-      reducedMotionQuery.removeEventListener("change", updateExperience);
-      coarsePointerQuery.removeEventListener("change", updateExperience);
-      compactViewportQuery.removeEventListener("change", updateExperience);
-    };
+    update();
+    mediaQueries.forEach((query) => query.addEventListener("change", update));
+    return () => mediaQueries.forEach((query) => query.removeEventListener("change", update));
   }, []);
 
-  const staticFallback = <StaticEngine project={project} />;
-  const touchOptimized = experience.coarsePointer && experience.compactViewport;
-  const useStatic = forceLite || experience.reducedMotion || touchOptimized || !experience.webglAvailable;
-  const quality = experience.weakDevice ? "low" : "high";
-  const isMemoCard = project.slug === "memocard";
-  const staticTransition = {
-    duration: experience.reducedMotion ? 0 : forceLite ? 0.22 : 0.36,
-    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-  };
-
-  useEffect(() => {
-    if (experience.reducedMotion || useStatic) {
-      engineControls.set({ opacity: 1, scale: 1, y: 0 });
-      return;
-    }
-
-    engineControls.stop();
-    engineControls.set({ opacity: 0.42, scale: 0.972, y: 12 });
-    void engineControls.start({
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
-    });
-  }, [activeIndex, engineControls, experience.reducedMotion, useStatic]);
+  const useStatic = forceLite || profile.reducedMotion || !profile.webglAvailable;
+  const quality = profile.weakDevice || (profile.coarsePointer && profile.compactViewport) ? "low" : "high";
+  const fallback = (
+    <ProceduralEngineFallback
+      project={project}
+      motionEnabled={!forceLite && !profile.reducedMotion}
+    />
+  );
 
   return (
-    <div
-      className={
-        "orbital-engine surface-" + project.surface +
-        (touchOptimized ? " is-touch-optimized" : "") +
-        (useStatic ? " is-static-render" : "")
-      }
+    <aside
+      className={`orbital-engine surface-${project.surface}${useStatic ? " is-static-render" : ""}`}
+      aria-label={`Mesin visual aktif: ${project.name}`}
       style={{
         "--project-accent": project.accent,
         "--project-accent-secondary": project.accentSecondary,
       } as React.CSSProperties}
     >
+      <div className="engine-viewport">
+        {useStatic ? fallback : (
+          <EngineBoundary fallback={fallback}>
+            <Suspense fallback={fallback}>
+              <CircularEngineCanvas
+                activeIndex={activeIndex}
+                progressRef={progressRef}
+                quality={quality}
+                surface={project.surface}
+                motionEnabled
+                ariaLabel={`Desain bergerak generatif untuk ${project.name}. Gulir halaman untuk mengubah bentuknya.`}
+              />
+            </Suspense>
+          </EngineBoundary>
+        )}
+      </div>
+
       <nav className="engine-project-rail" aria-label="Pilih proyek aktif">
         {experienceProjects.map((item, index) => (
           <button
             type="button"
             className={activeIndex === index ? "is-active" : ""}
-            aria-current={activeIndex === index ? "true" : undefined}
-            aria-label={"Tampilkan " + item.name}
+            aria-current={activeIndex === index ? "step" : undefined}
+            aria-label={`Tampilkan ${item.name}`}
             onClick={() => onSelectProject(index)}
             key={item.slug}
           >
@@ -153,75 +144,54 @@ export function CircularEngine({ project, activeIndex, forceLite, onSelectProjec
         ))}
       </nav>
 
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          className="engine-app-badge"
+          key={project.slug}
+          initial={profile.reducedMotion ? false : { opacity: 0, scale: 0.9, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={profile.reducedMotion ? undefined : { opacity: 0, scale: 0.94, y: -5 }}
+          transition={{ duration: profile.reducedMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img src={project.icon} alt="" width="42" height="42" />
+          <span><small>APP / 0{activeIndex + 1}</small><strong>{project.name}</strong></span>
+        </motion.div>
+      </AnimatePresence>
+
       <div className="engine-angle engine-angle-top" aria-hidden="true">22.5°</div>
       <div className="engine-angle engine-angle-bottom" aria-hidden="true">22.5°</div>
       <div className="engine-angle engine-angle-left" aria-hidden="true">45°</div>
       <div className="engine-angle engine-angle-right" aria-hidden="true">45°</div>
 
-      <div className="engine-viewport" aria-hidden="true">
-        {useStatic ? (
-          <AnimatePresence initial={false} mode="sync">
-            <motion.div
-              className="engine-visual-state"
-              key={project.slug}
-              initial={experience.reducedMotion ? false : { opacity: 0, scale: 0.985, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={experience.reducedMotion ? undefined : { opacity: 0, scale: 1.008, y: -4 }}
-              transition={staticTransition}
-            >
-              {staticFallback}
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <motion.div className="engine-visual-state" animate={engineControls} initial={{ opacity: 1, scale: 1, y: 0 }}>
-            <EngineBoundary fallback={staticFallback}>
-              <Suspense fallback={staticFallback}>
-                <CircularEngineCanvas
-                  visual={project.visual}
-                  accent={project.accent}
-                  accentSecondary={project.accentSecondary}
-                  activeIndex={activeIndex}
-                  quality={quality}
-                  surface={project.surface}
-                />
-              </Suspense>
-            </EngineBoundary>
-          </motion.div>
-        )}
-      </div>
-
-      <div className="engine-system-readout">
-        <strong>{project.systemLabel}</strong>
-        {SYSTEM_STEPS.map((step, index) => (
-          <span key={step}>{String(index + 1).padStart(2, "0")}&nbsp;&nbsp; {step}</span>
-        ))}
-      </div>
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          className="engine-system-readout"
+          key={`${project.slug}-system`}
+          initial={profile.reducedMotion ? false : { opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={profile.reducedMotion ? undefined : { opacity: 0, x: 8 }}
+          transition={{ duration: profile.reducedMotion ? 0 : 0.3 }}
+        >
+          <strong>{project.systemLabel}</strong>
+          {SYSTEM_STEPS.map((step, index) => (
+            <span className={index === activeIndex ? "is-active" : ""} key={step}>
+              {String(index + 1).padStart(2, "0")}&nbsp;&nbsp; {step}
+            </span>
+          ))}
+        </motion.div>
+      </AnimatePresence>
 
       <div className="engine-field-readout">
+        <i />
         <strong>{project.fieldLabel}</strong>
-        {isMemoCard ? (
-          <><span>ALGORITMA ADAPTIF</span><span>PERSONALIZED INTERVALS</span><span>RETENSI OPTIMAL</span></>
-        ) : (
-          <><span>{project.technologies[0]}</span><span>{project.technologies[1]}</span><span>ADAPTIVE OUTPUT</span></>
-        )}
+        <span>{project.technologies.slice(0, 2).join(" / ")}</span>
       </div>
 
       <div className="engine-signal-readout">
+        <i />
         <strong>{project.signalLabel}</strong>
-        {isMemoCard ? (
-          <><span>EASE FACTOR</span><span>STABILITY</span><span>RETRIEVAL RATE</span></>
-        ) : (
-          <><span>{project.status}</span><span>{quality === "low" ? "ADAPTIVE QUALITY" : "REALTIME RENDER"}</span></>
-        )}
+        <span>{quality === "low" ? "ADAPTIVE MOBILE RENDER" : "REALTIME GENERATIVE FIELD"}</span>
       </div>
-
-      <div className="engine-active-index" aria-hidden="true">
-        <strong>{String(activeIndex + 1).padStart(2, "0")}</strong><span>/ 06</span>
-      </div>
-
-      <div className="engine-scroll-label" aria-hidden="true">
-        <span>{touchOptimized ? "TOUCH MOTION" : useStatic ? "STATIC FALLBACK" : "SCROLL + POINTER"}</span><i />
-      </div>
-    </div>
+    </aside>
   );
 }

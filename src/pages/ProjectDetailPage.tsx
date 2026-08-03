@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FlowlyPreview } from "../components/FlowlyPreview";
 import { Footer } from "../components/Footer";
 import { ArrowIcon, ExternalIcon, GithubIcon } from "../components/Icons";
+import { ProjectMotionPreview } from "../components/ProjectMotionPreview";
 import { experienceProjects } from "../data/experience";
 import { projectBySlug } from "../data/projects";
 import { NotFoundPage } from "./NotFoundPage";
@@ -24,6 +24,7 @@ export function ProjectDetailPage() {
   if (!project) return <NotFoundPage />;
 
   const projectIndex = experienceProjects.findIndex((item) => item.slug === project.slug);
+  const experienceProject = experienceProjects[projectIndex] ?? experienceProjects[0];
   const nextProject = experienceProjects[(projectIndex + 1) % experienceProjects.length] ?? experienceProjects[0];
 
   return (
@@ -82,13 +83,11 @@ export function ProjectDetailPage() {
 
         <section className="detail-preview" aria-labelledby="preview-title">
           <header>
-            <div><p className="eyebrow">PRODUCT VIEW</p><h2 id="preview-title">Tampilan produk</h2></div>
-            <p>{project.screenshot ? "Screenshot dari production deployment." : "Preview direkonstruksi dari source karena public build belum memuat bundle."}</p>
+            <div><p className="eyebrow">MOTION BLUEPRINT</p><h2 id="preview-title">Cara sistem ini bergerak.</h2></div>
+            <p>Representasi ini dibuat dari logika produk, bukan screenshot APK atau rekaman antarmuka.</p>
           </header>
           <div className="detail-preview-frame">
-            {project.screenshot ? (
-              <img src={project.screenshot} alt={`Tampilan production ${project.name}`} width="1280" height="880" />
-            ) : <FlowlyPreview />}
+            <ProjectMotionPreview project={experienceProject} index={projectIndex} />
           </div>
         </section>
 

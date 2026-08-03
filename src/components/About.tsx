@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { GithubIcon, MailIcon } from "./Icons";
 
 const skillGroups = [
@@ -20,14 +20,16 @@ const skillGroups = [
 ];
 
 export function About() {
+  const reducedMotion = useReducedMotion();
+
   return (
     <section className="about-section" id="about">
       <motion.div
         className="about-intro"
-        initial={{ opacity: 0, y: 24 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.65 }}
+        transition={{ duration: reducedMotion ? 0 : 0.36, ease: [0.22, 1, 0.36, 1] }}
       >
         <p className="eyebrow">PROFILE / 03</p>
         <h2>Berangkat dari masalah yang benar-benar terasa.</h2>

@@ -7,9 +7,9 @@
 ---
 
 **Project:** Wynn Dev Portfolio
-**Generated:** 2026-08-03 13:40:39
-**Category:** Portfolio/Personal
-**Design Dials:** Variance 7/10 (Balanced / Modern) | Motion 7/10 (Standard) | Density 4/10 (Standard)
+**Generated:** 2026-08-03 14:55:28
+**Category:** Construction/Architecture
+**Design Dials:** Variance 8/10 (Bold / Asymmetric) | Motion 10/10 (Complex) | Density 4/10 (Standard)
 
 ---
 
@@ -19,29 +19,29 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#18181B` | `--color-primary` |
+| Primary | `#1E293B` | `--color-primary` |
 | On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#3F3F46` | `--color-secondary` |
-| Accent/CTA | `#2563EB` | `--color-accent` |
-| Background | `#FAFAFA` | `--color-background` |
-| Foreground | `#09090B` | `--color-foreground` |
-| Muted | `#E8ECF0` | `--color-muted` |
-| Border | `#E4E4E7` | `--color-border` |
-| Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#18181B` | `--color-ring` |
+| Secondary | `#334155` | `--color-secondary` |
+| Accent/CTA | `#22C55E` | `--color-accent` |
+| Background | `#0F172A` | `--color-background` |
+| Foreground | `#F8FAFC` | `--color-foreground` |
+| Muted | `#272F42` | `--color-muted` |
+| Border | `#475569` | `--color-border` |
+| Destructive | `#EF4444` | `--color-destructive` |
+| Ring | `#1E293B` | `--color-ring` |
 
-**Color Notes:** Monochrome + blue accent
+**Color Notes:** Code dark + run green
 
 ### Typography
 
-- **Heading Font:** Archivo
-- **Body Font:** Space Grotesk
-- **Mood:** minimal, portfolio, designer, creative, clean, artistic
-- **Google Fonts:** [Archivo + Space Grotesk](https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap)
+- **Heading Font:** Playfair Display
+- **Body Font:** Source Serif 4
+- **Mood:** monochrome, editorial, austere, typographic, pocket manifesto, luxury, high contrast, brutalist mobile
+- **Google Fonts:** [Playfair Display + Source Serif 4](https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400|Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300)
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap');
 ```
 
 ### Spacing Variables
@@ -76,7 +76,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #2563EB;
+  background: #22C55E;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -93,8 +93,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #18181B;
-  border: 2px solid #18181B;
+  color: #1E293B;
+  border: 2px solid #1E293B;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -107,7 +107,7 @@
 
 ```css
 .card {
-  background: #FAFAFA;
+  background: #0F172A;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -133,9 +133,9 @@
 }
 
 .input:focus {
-  border-color: #18181B;
+  border-color: #1E293B;
   outline: none;
-  box-shadow: 0 0 0 3px #18181B20;
+  box-shadow: 0 0 0 3px #1E293B20;
 }
 ```
 
@@ -161,44 +161,45 @@
 
 ## Style Guidelines
 
-**Style:** Motion-Driven
+**Style:** Kinetic Brutalism (Mobile)
 
-**Keywords:** Animation-heavy, microinteractions, smooth transitions, scroll effects, parallax, entrance anim, page transitions
+**Keywords:** kinetic, brutalism, motion, marquee, acid yellow, uppercase, oversized, aggressive typography, street, zine, high contrast, scroll-driven, haptic, reanimated
 
-**Best For:** Portfolio sites, storytelling platforms, interactive experiences, entertainment apps, creative, SaaS
+**Best For:** Immersive storytelling apps, brand flagship mobile, music/culture platforms, sports apps, underground zines, limited-edition product drops, performance dashboards
 
-**Key Effects:** Scroll anim (Intersection Observer), hover (300-400ms), entrance, parallax (3-5 layers), page transitions
+**Key Effects:** Infinite marquee (Reanimated, Linear easing, 5s loop, hard clip), hero parallax (scale 1.0→1.3 + fade), sticky section header push, card flood inversion on press (bg→#DFE104, text→#000000), haptic Medium on every press, scroll-triggered interpolate transforms, 0px radius, 2px borders, 100ms color transitions
 
 ### Page Pattern
 
-**Pattern Name:** Portfolio Grid
+**Pattern Name:** Horizontal Scroll Journey
 
-- **Conversion Strategy:** Visuals first. Filter by category. Fast loading essential.
-- **CTA Placement:** Project Card Hover + Footer Contact
-- **Section Order:** 1. Hero (Name/Role), 2. Project Grid (Masonry), 3. About/Philosophy, 4. Contact
+- **Conversion Strategy:** Immersive product discovery. High engagement. Keep navigation visible.
+- **CTA Placement:** Floating Sticky CTA or End of Horizontal Track
+- **Section Order:** 1. Intro (Vertical), 2. The Journey (Horizontal Track), 3. Detail Reveal, 4. Vertical Footer
 
 ---
 
 ## Motion
 
-**Stagger List** (Standard) — Trigger: load or scroll | Duration: 300-450ms | Easing: `back.out(1.4)`
+**Scroll Reveal** (Complex) — Trigger: scroll (continuous scrub) | Duration: tied to scroll position | Easing: `none (scrub-driven)`
 
 ```js
-gsap.from('.grid-item', { opacity: 0, scale: 0.92, y: 16, duration: 0.4, stagger: { each: 0.06, from: 'start', grid: 'auto' }, ease: 'back.out(1.4)' });
+gsap.timeline({ scrollTrigger: { trigger: section, start: 'top top', end: '+=150%', scrub: 1, pin: true } }).from('.headline', { opacity: 0, y: 40 }).to('.bg-layer', { yPercent: -20 }, '<');
 ```
 
-**Framework notes:** grid: 'auto' lets GSAP infer rows/columns from a CSS grid layout for a natural wave stagger
+**Framework notes:** Pinning needs the section to have deterministic height; recalc ScrollTrigger.refresh() after images/fonts load
 
-- ✅ Combine with from: 'center' for a bento-grid layout to draw the eye inward first
-- ❌ Don't use back.out on dense data tables; the overshoot reads as sloppy on informational UI
-- ⚡ Group DOM writes; avoid interleaving layout reads (getBoundingClientRect) between staggered tweens
+- ✅ Use scrub: true or a small number (0.5-1.5) instead of instant jumps so it feels tied to the scrollbar
+- ❌ Don't pin more than 1-2 sections per page; excessive pinning fights native scroll feel and hurts mobile UX
+- ⚡ Pinning forces layout reflow; test on mid-tier mobile devices, not just desktop
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Corporate templates
-- ❌ Generic layouts
+- ❌ 2D-only layouts
+- ❌ Poor image quality
+- ❌ AI purple/pink gradients
 
 ### Additional Forbidden Patterns
 

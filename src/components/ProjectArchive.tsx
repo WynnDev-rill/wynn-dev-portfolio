@@ -1,47 +1,51 @@
 import { ArrowUpRight } from "@phosphor-icons/react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import type { ExperienceProject } from "../data/experience";
-import { FlowlyPreview } from "./FlowlyPreview";
 
 interface ProjectArchiveProps {
   projects: ExperienceProject[];
 }
 
 export function ProjectArchive({ projects }: ProjectArchiveProps) {
+  const reducedMotion = useReducedMotion();
+
   return (
-    <section className="project-archive" aria-labelledby="archive-title">
-      <header className="archive-heading">
+    <section className="project-index" aria-labelledby="project-index-title">
+      <header className="project-index-heading">
         <div>
-          <p className="eyebrow">ARCHIVE / 02</p>
-          <h2 id="archive-title">Enam sistem, satu cara berpikir.</h2>
+          <p className="eyebrow">SYSTEM INDEX / 02</p>
+          <h2 id="project-index-title">Enam produk.<br />Enam cara bergerak.</h2>
         </div>
-        <p>Setiap proyek diperlakukan sebagai produk nyata—bukan sekadar eksperimen visual.</p>
+        <p>
+          Seluruh visual di atas dibentuk secara generatif dari logika produknya—bukan screenshot aplikasi.
+          Pilih satu sistem untuk membaca detail keputusan produk dan teknisnya.
+        </p>
       </header>
 
-      <div className="archive-grid">
+      <div className="project-index-list">
         {projects.map((project, index) => (
-          <article className="archive-card" key={project.slug}>
-            <Link className="archive-visual" to={"/projects/" + project.slug} aria-label={"Lihat " + project.name}>
-              {project.screenshot ? (
-                <img
-                  src={project.screenshot}
-                  alt={"Tampilan " + project.name}
-                  width="1280"
-                  height="880"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : <FlowlyPreview compact />}
-              <span>{String(index + 1).padStart(2, "0")} / 06</span>
+          <motion.article
+            className="project-index-row"
+            style={{ "--row-accent": project.accent } as React.CSSProperties}
+            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: reducedMotion ? 0 : 0.34, delay: reducedMotion ? 0 : index * 0.035 }}
+            key={project.slug}
+          >
+            <Link to={`/projects/${project.slug}`} aria-label={`Buka studi kasus ${project.name}`}>
+              <span className="project-row-number">{String(index + 1).padStart(2, "0")}</span>
+              <img className="project-row-icon" src={project.icon} alt="" width="56" height="56" loading="lazy" decoding="async" />
+              <span className="project-row-title">
+                <small>{project.category}</small>
+                <strong>{project.name}</strong>
+              </span>
+              <span className="project-row-description">{project.description}</span>
+              <span className="project-row-stack">{project.technologies.slice(0, 2).join(" + ")}</span>
+              <ArrowUpRight className="project-row-arrow" size={24} aria-hidden="true" />
             </Link>
-            <div className="archive-card-copy">
-              <p>{project.eyebrow}</p>
-              <h3>{project.name}</h3>
-              <Link to={"/projects/" + project.slug} aria-label={"Buka studi kasus " + project.name}>
-                <ArrowUpRight size={22} weight="regular" />
-              </Link>
-            </div>
-          </article>
+          </motion.article>
         ))}
       </div>
     </section>
